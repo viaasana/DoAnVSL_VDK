@@ -11,8 +11,6 @@
 
 
 
-branch testtttttt
-
 ORG 0000H      ; Bắt đầu từ địa chỉ 0
 
 ;===============
