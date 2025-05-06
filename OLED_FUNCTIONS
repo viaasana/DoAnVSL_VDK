@@ -1,0 +1,508 @@
+ORG 0000H
+
+AJMP MAIN
+
+
+ORG 03H
+
+
+
+
+;+---------------------------------------+
+;|							|
+;|	DEFINE SCL AND SDA PIN	|
+;|							|
+;+---------------------------------------+
+
+SCL BIT P2.1
+SDA BIT P2.0
+
+;+---------------------------------------+
+;|							|
+;|	MAIN PROGRAM			|
+;|							|
+;+---------------------------------------+
+
+
+MAIN:
+	 CALL OLED_INIT
+	 CALL DELAY
+	 
+LOOP:
+	 
+	 
+
+;+---------------------------------------+
+;|							|
+;|	DELAY FUNCTION		|
+;|							|
+;+---------------------------------------+
+DELAY:
+	 MOV R5, #50
+	 MOV R6, #255
+
+DELAY_LOOP:
+	 DJNZ R5, DELAY_LOOP
+	 DJNZ R6, DELAY_LOOP
+	 RET
+	 
+	 
+;+---------------------------------------+
+;|							|
+;|	I2C CONDITION			|
+;|							|
+;+---------------------------------------+
+ 
+ ;------- I2C START ------------------
+ I2C_START:
+	 SETB SDA
+	 SETB SCL
+	 NOP
+	 NOP
+	 CLR SDA
+	 CLR SCL
+	 RET
+	 
+;------ I2C STOP ---------------------
+I2C_STOP:
+	 CLR SDA
+	 NOP
+	 SETB SCL
+	 NOP
+	 SETB SDA
+	 NOP
+	 RET
+  
+ ;-----I2C WRITE BYTE--------------
+ I2C_WRITE:
+	 MOV R7, #8
+I2C_WRITE_LOOP:
+	 RLC A
+	 JC SDA_HIGHT;	IF SEND 1 GO TO SET HIGHT
+	 CLR SDA	;	IF SEND 0 CLR SDA
+	 SJMP SDA_DONE
+SDA_HIGHT:
+	 SETB SDA
+SDA_DONE:
+	 NOP
+	 NOP
+	 SETB SCL
+	 NOP
+	 NOP
+	 CLR SCL
+	 DJNZ R7, I2C_WRITE_LOOP
+	 
+	    ; Check for ACK
+	 SETB SDA        ; Release SDA for ACK
+	 NOP
+	 SETB SCL        ; Clock for ACK
+	 NOP
+	 MOV C, SDA      ; Read ACK bit
+	 CLR SCL         ; Clock low
+	 RET
+	 
+;+---------------------------------------+
+;|							|
+;|	FONT TABLE				|
+;|							|
+;+---------------------------------------+
+ORG 3000H   
+BIG_FONT_TABLE:
+;; Each digit is 16 rows (DB) of 2 bytes each (10 pixels = 8 + 2)
+; MSB is leftmost pixel, LSB is rightmost in each byte
+;0
+DB 0FEH, 1H, 1H, 1H, 1H, 1H, 1H, 1H, 1H,  0FEH
+DB 3FH, 40H, 40H, 40H, 40H, 40H, 40H, 40H, 40H, 3FH
+;1
+DB 0H, 8H, 4H, 2H, 0FFH, 0FFH, 0H, 0H, 0H, 0H
+DB 60H, 60H, 60H, 60H, 7FH, 7FH, 60H, 60H, 60H, 60H
+
+;2
+DB 81H, 81H, 81H, 81H, 81H, 81H, 81H, 81H, 81H, 7EH
+DB 3FH, 40H, 40H,  40H,  40H,  40H,  40H,  40H,  40H,  40H
+
+;3
+DB 81H, 81H, 81H, 81H, 81H, 81H, 81H, 81H, 81H, 7EH
+DB 40H, 40H,  40H,  40H,  40H,  40H,  40H,  40H,  40H, 3FH
+
+;4
+DB 0FFH, 80H, 80H, 80H, 80H, 80H, 80H, 80H, 0FFH, 80H
+DB 0H, 0H, 0H, 0H, 0H, 0H, 0H, 0H, 7FH, 0H
+
+;5
+DB 7EH, 81H, 81H, 81H, 81H, 81H, 81H, 81H, 81H, 81H
+DB 40H, 40H,  40H,  40H,  40H,  40H,  40H,  40H,  40H, 3FH
+
+;6
+DB 7EH, 81H, 81H, 81H, 81H, 81H, 81H, 81H, 81H, 81H
+DB 3FH, 40H,  40H,  40H,  40H,  40H,  40H,  40H,  40H, 3FH
+
+;7
+DB 0H, 0H, 0H, 1H, 1H, 1H, 1H, 1H, 0E1H, 1FH
+DB 0H, 0H, 0H, 0H, 0H, 70H, 0CH, 03H, 0H, 0H
+
+;8
+DB 7EH, 81H, 81H, 81H, 81H, 81H, 81H, 81H, 81H, 7EH
+DB 3FH, 40H, 40H,  40H,  40H,  40H,  40H,  40H,  40H,  3FH
+
+;9
+DB 7EH, 81H, 81H, 81H, 81H, 81H, 81H, 81H, 81H, 7EH
+DB 0H, 40H, 40H,  40H,  40H,  40H,  40H,  40H,  40H,  3FH
+
+
+;  5x7 font table (LSB at TOP)
+
+; Character 'M'
+FONT_M:     DB  7FH, 8H, 10H, 8H, 7FH
+
+
+; Character '?' 
+FONT_U_HORN_ACUTE: DB 3EH, 20H, 0A0H, 3DH, 3H
+
+; Character 'c'
+FONT_C:     DB  3Ch, 42h, 42h, 42h, 24h 
+
+; Space character
+FONT_SPACE: DB  00h, 00h, 00h, 00h, 00h  ; 
+
+; Character 'n' 
+FONT_N:     DB  7FH, 2H, 4H, 8H, 7FH
+
+; Character 'u' 
+FONT_U_HORN: DB 7CH, 40H, 40H, 7DH, 3H
+
+; Character 'o' (o with horn)
+FONT_O_HORN: DB 30H, 4AH, 49H, 48H, 36H 
+
+FONT_W: DB 0FFH, 20H, 10H, 20H, 0FFH
+
+FONT_a: DB 48H, 0A4H, 0A4H, 0A4H, 7CH
+
+FONT_t: DB 8H, 7EH, 88H, 88H, 00H
+
+FONT_e: DB 38H, 54H, 94H, 94H, 48H
+
+FONT_r: DB 0FCH, 08H, 04H, 04H, 08H
+
+FONT_L_UPPER: DB 0FFH, 80H, 80H, 80H, 80H
+
+FONT_v: DB 38H, 40H, 80H, 40H, 38H
+
+FONT_L: DB 82H, 82H, 0FEH, 80H, 80H
+
+
+
+
+
+
+
+;+---------------------------------------+
+;|							|
+;|	OLED'S FUNCTIONS		|
+;|							|
+;+---------------------------------------+
+
+;--------OLED COMMAND----------		comand passed to r4
+OLED_COMMAND:
+	 CALL  I2C_START
+	 MOV A, #01111000B ;ADDRESS: 0111100, LAST BIT IS WRITE MODE
+	 CALL I2C_WRITE
+	 MOV A, #10000000B ;Co=1, D/C=0 FOR SEND COMMAND
+	 CALL I2C_WRITE
+	 MOV A, R4
+	 CALL I2C_WRITE
+	 CALL I2C_STOP
+	 RET
+	 
+;-------OLED DATA------------------			data passed to r4
+OLED_DATA:
+	 CALL I2C_START
+	 MOV A, #01111000B ;ADDRESS: 0111100, LAST BIT IS WRITE MODE
+	 CALL I2C_WRITE
+	 MOV A, #11000000B ;Co=1, D/C=1 FOR SEND DATA
+	 CALL I2C_WRITE
+	 MOV A, R4
+	 CALL I2C_WRITE
+	 CALL I2C_STOP
+	 RET
+	 
+
+;-------INIT----------------------------
+OLED_INIT:
+	MOV R4, #0AEH       ; Display OFF
+	CALL OLED_COMMAND
+
+	MOV R4, #0A6H       ; Normal display
+	CALL OLED_COMMAND
+
+	MOV R4, #040H       ; Set display start line
+	CALL OLED_COMMAND
+
+
+	 MOV R4, #20H       ; Set Memory Addressing Mode
+	 ACALL OLED_COMMAND
+	 MOV R4, #00H       ; Vertical mode
+	 ACALL OLED_COMMAND
+
+	 ; Optionally set page/column ranges
+	 MOV R4, #21H       ; Set column address
+	 ACALL OLED_COMMAND
+	 MOV R4, #00H       ; Start column
+	 ACALL OLED_COMMAND
+	 MOV R4, #7FH       ; End column
+	 ACALL OLED_COMMAND
+
+	 MOV R4, #22H       ; Set page address
+	 ACALL OLED_COMMAND
+	 MOV R4, #00H       ; Start page
+	 ACALL OLED_COMMAND
+	 MOV R4, #07H       ; End page
+	 ACALL OLED_COMMAND
+	
+
+
+	MOV R4, #0AFH       ; Display ON
+	CALL OLED_COMMAND
+
+	RET
+	
+	
+	
+;------ SET COLUMN-------
+SET_COLUMN:
+	MOV R4, #21H
+	CALL OLED_COMMAND
+	MOV A, R0
+	MOV R4, A
+	CALL OLED_COMMAND
+	MOV R4, #7FH
+	CALL OLED_COMMAND
+	RET
+
+	 
+	
+;--------SET PAGE------------
+SET_PAGE:
+	MOV R4, #22H
+	CALL OLED_COMMAND
+	MOV A, R0
+	MOV R4, A
+	CALL OLED_COMMAND
+	MOV R4, #07H
+	CALL OLED_COMMAND
+	RET
+	
+	
+;----------CLEAR-----------
+CLEAR_TEXT:
+	 MOV R0,  #1
+	 CALL SET_PAGE
+	 MOV R0, #0
+	 CALL SET_COLUMN
+	 MOV R1, #128
+	 CALL CLEAR_LOOP
+	 RET
+	 
+	 
+	 
+CLEAR_LOOP:		; R1=128 BEFORE CALL THIS FUNCTION
+	 MOV R4, #00H
+	 CALL OLED_DATA
+	 DJNZ R1, CLEAR_LOOP
+	 RET
+
+ ;----- DRAW FRAME----------------
+DISPLAY_BIG_DIGIT:
+    ; Input: R1 = Column, R2 = Starting Page, R3 = Digit (0-9)
+
+    ; Calculate font data offset
+     MOV A, R3
+     MOV B, #20
+     MUL AB 
+
+     MOV DPTR, #BIG_FONT_TABLE
+     ADD A, DPL
+     MOV DPL, A
+     MOV A, DPH
+     ADDC A, #0
+     MOV DPH, A
+     
+     
+     MOV A, R1
+     MOV R0, A
+     CALL SET_COLUMN
+     
+     MOV A, R2
+     MOV R0, A
+     CALL SET_PAGE
+     
+     MOV R7, #10		; DISPLAY FIRST 10 BYTES 
+HIGHTS_BYTES:
+      PUSH 7
+      MOV A, R7
+      CLR A
+      MOVC A, @A+DPTR
+      MOV R4, A
+      CALL OLED_DATA
+      INC DPTR
+      POP 7
+      DJNZ R7, HIGHTS_BYTES
+      
+      MOV A, R1
+      MOV R0, A
+      CALL SET_COLUMN
+      MOV A, R2
+      INC A
+      MOV R0, A
+      CALL SET_PAGE
+      
+      
+      MOV R7, #10
+LOW_BYTES:
+     PUSH 7
+      MOV A, R7
+      CLR A
+      MOVC A, @A+DPTR
+      MOV R4, A
+      CALL OLED_DATA
+      INC DPTR
+      POP 7
+      DJNZ R7, LOW_BYTES
+
+      
+      RET
+    
+    
+ DISPLAY_STRING_ENG:
+      ; Input: R1 = Column, R2 = Starting Page
+      MOV DPTR, #FONT_W
+      CALL DRAW_TEXT
+      
+      MOV A, R1
+      ADD A, #6
+      MOV R1, A
+      MOV DPTR, #FONT_a
+      CALL DRAW_TEXT
+      
+      MOV A, R1
+      ADD A, #6
+      MOV R1, A
+      MOV DPTR, #FONT_t
+      CALL DRAW_TEXT
+      
+      MOV A, R1
+      ADD A, #5
+      MOV R1, A
+      MOV DPTR, #FONT_e
+      CALL DRAW_TEXT
+      
+      MOV A, R1
+      ADD A, #6
+      MOV R1, A
+      MOV DPTR, #FONT_r
+      CALL DRAW_TEXT
+      
+      MOV A, R1
+      ADD A, #10
+      MOV R1, A
+      MOV DPTR, #FONT_L_UPPER
+      CALL DRAW_TEXT
+      
+      MOV A, R1
+      ADD A, #6
+      MOV R1, A
+      MOV DPTR, #FONT_e
+      CALL DRAW_TEXT
+      
+      MOV A, R1
+      ADD A, #6
+      MOV R1, A
+      MOV DPTR, #FONT_v
+      CALL DRAW_TEXT
+      
+      MOV A, R1
+      ADD A, #6
+      MOV R1, A
+      MOV DPTR, #FONT_e
+      CALL DRAW_TEXT
+      
+      MOV A, R1
+      ADD A, #6
+      MOV R1, A
+      MOV DPTR, #FONT_L
+      CALL DRAW_TEXT
+
+      
+      
+      RET
+      
+      
+ DISPLAY_STRING_VIE:
+      MOV DPTR, #FONT_M
+      CALL DRAW_TEXT
+      
+      MOV A, R1
+      ADD A, #6
+      MOV R1, A
+      MOV DPTR, #FONT_U_HORN_ACUTE
+      CALL DRAW_TEXT
+      
+      MOV A, R1
+      ADD A, #6
+      MOV R1, A
+      MOV DPTR, #FONT_C
+      CALL DRAW_TEXT
+      
+      MOV A, R1
+      ADD A, #10
+      MOV R1, A
+      MOV DPTR, #FONT_N
+      CALL DRAW_TEXT
+      
+      MOV A, R1
+      ADD A, #6
+      MOV R1, A
+      MOV DPTR, #FONT_U_HORN
+      CALL DRAW_TEXT
+      
+      MOV A, R1
+      ADD A, #6
+      MOV R1, A
+      MOV DPTR, #FONT_O_HORN
+      CALL DRAW_TEXT
+      
+      MOV A, R1
+      ADD A, #6
+      MOV R1, A
+      MOV DPTR, #FONT_C
+      CALL DRAW_TEXT
+      
+      
+      RET
+    
+    
+    
+ DRAW_TEXT:
+     ; Input: R1 = Column, R2 = Starting Page,DPTR= Poit to memory that storing the font
+     MOV A, R1
+     MOV R0, A
+     CALL SET_COLUMN
+     
+     MOV A, R2
+     MOV R0, A
+     CALL SET_PAGE
+     
+     MOV R3, #5
+ DRAW_TEXT_LOOP:
+      CLR A
+      MOVC A, @A+DPTR
+      MOV R4, A
+      CALL OLED_DATA
+      INC DPTR
+      DJNZ R3, DRAW_TEXT_LOOP
+      RET
+     
+     
+     
+ EXIT:
+END
